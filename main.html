@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salary Increment Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* Dark Mode Base Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3 {
+            color: #ffffff;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+        }
+
+        th, td {
+            border: 1px solid #333;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #252525;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: #252525;
+        }
+
+        tr:hover {
+            background-color: #333;
+        }
+
+        /* Form Elements */
+        input[type="number"],
+        input[type="file"],
+        input[type="text"] {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        input[type="number"]:focus,
+        input[type="file"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #555;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+        }
+
+        input[type="radio"] {
+            margin-right: 8px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #cccccc;
+        }
+
+        /* Buttons */
+        button {
+            background-color: #3a3a3a;
+            color: #ffffff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin: 10px 5px 0 0;
+        }
+
+        button:hover {
+            background-color: #4d4d4d;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            background-color: #2e2e2e;
+            transform: translateY(0);
+        }
+
+        /* Error Messages */
+        .error {
+            color: #ff6b6b;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+
+        /* Container Styles */
+        .step {
+            background-color: #1e1e1e;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            display: none; /* Hidden by default */
+        }
+
+        .step.active {
+            display: block; /* Only show active step */
+        }
+
+        #locationInputs div,
+        #ratingInputs div,
+        #distributionInputs div {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #252525;
+            border-radius: 5px;
+        }
+
+        /* Radio button group styling */
+        .radio-group {
+            margin: 15px 0;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            
+            .step {
+                padding: 15px;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Salary Increment Calculator</h1>
+    
+    <!-- Step 1: File Upload -->
+    <div id="step1" class="step active">
+        <h2>Step 1: Upload Excel File</h2>
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+        <button id="uploadBtn">Upload</button>
+        <div id="fileError" class="error"></div>
+    </div>
+    
+    <!-- Step 2: Location-based Increments -->
+    <div id="step2" class="step">
+        <h2>Step 2: Set Base Increments</h2>
+        
+        <div class="radio-group">
+            <h3>Increment Method:</h3>
+            <div class="radio-option">
+                <input type="radio" id="locationBased" name="incrementMethod" value="location" checked>
+                <label for="locationBased">Location-based increments</label>
+            </div>
+            <div class="radio-option">
+                <input type="radio" id="uniformIncrement" name="incrementMethod" value="uniform">
+                <label for="uniformIncrement">Uniform increment for all</label>
+            </div>
+        </div>
+        
+        <div id="locationInputs">
+            <!-- Will be populated based on selected method -->
+        </div>
+        
+        <button id="prevBtn2">Previous</button>
+        <button id="nextBtn2">Continue</button>
+        <div id="locationError" class="error"></div>
+    </div>
+    
+    <!-- Step 3: Rating-based Increments -->
+    <div id="step3" class="step">
+        <h2>Step 3: Set Rating-based Increments</h2>
+        <div id="ratingInputs"></div>
+        <button id="prevBtn3">Previous</button>
+        <button id="nextBtn3">Continue</button>
+        <div id="ratingError" class="error"></div>
+    </div>
+    
+    <!-- Step 4: HOD Adjustments -->
+    <div id="step4" class="step">
+        <h2>Step 4: HOD Adjustments</h2>
+        <div>
+            <label>Total Department Fund: </label>
+            <input type="number" id="totalFund" min="0">
+        </div>
+        <div>
+            <h3>Distribution Method:</h3>
+            <div class="radio-option">
+                <input type="radio" name="distribution" id="evenDist" value="even" checked>
+                <label for="evenDist">Even Distribution</label>
+            </div>
+            <div class="radio-option">
+                <input type="radio" name="distribution" id="percentageDist" value="percentage">
+                <label for="percentageDist">Percentage Distribution</label>
+            </div>
+            <div class="radio-option">
+                <input type="radio" name="distribution" id="amountDist" value="amount">
+                <label for="amountDist">Direct Amount Entry</label>
+            </div>
+        </div>
+        
+        <div id="distributionInputs"></div>
+        <button id="prevBtn4">Previous</button>
+        <button id="nextBtn4">Continue</button>
+        <div id="hodError" class="error"></div>
+    </div>
+    
+    <!-- Step 5: Review and Download -->
+    <div id="step5" class="step">
+        <h2>Step 5: Review and Download</h2>
+        <div id="previewTable"></div>
+        <button id="prevBtn5">Previous</button>
+        <button id="downloadBtn">Download Updated File</button>
+    </div>
+
+    <script>
+        // Global variables
+        let workbook;
+        let worksheet;
+        let jsonData;
+        let uniqueLocations = [];
+        let uniqueRatings = [];
+        let totalFund = 0;
+        
+        // DOM elements
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const steps = document.querySelectorAll('.step');
+        const locationInputs = document.getElementById('locationInputs');
+        const ratingInputs = document.getElementById('ratingInputs');
+        const distributionInputs = document.getElementById('distributionInputs');
+        const previewTable = document.getElementById('previewTable');
+        
+        // Navigation functions
+        function showStep(stepNumber) {
+            steps.forEach((step, index) => {
+                step.classList.toggle('active', index === stepNumber - 1);
+            });
+        }
+        
+        // Step 1: File Upload
+        uploadBtn.addEventListener('click', () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                document.getElementById('fileError').textContent = 'Please select a file';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    workbook = XLSX.read(data, { type: 'array' });
+                    worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    // Get unique locations and ratings
+                    uniqueLocations = [...new Set(jsonData.map(row => row['Location']))];
+                    uniqueRatings = [...new Set(jsonData.map(row => row['Rating']))].filter(r => r);
+                    
+                    // Proceed to step 2
+                    showStep(2);
+                    updateIncrementMethodUI();
+                } catch (error) {
+                    document.getElementById('fileError').textContent = 'Error processing file: ' + error.message;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+        
+        // Step 2: Base Increments
+        function updateIncrementMethodUI() {
+            const method = document.querySelector('input[name="incrementMethod"]:checked').value;
+            locationInputs.innerHTML = '';
+            
+            if (method === 'location') {
+                uniqueLocations.forEach(location => {
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <label>${location}: </label>
+                        <input type="number" class="location-percent" data-location="${location}" min="0" step="0.1">%
+                    `;
+                    locationInputs.appendChild(div);
+                });
+            } else if (method === 'uniform') {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label>Uniform Increment Percentage: </label>
+                    <input type="number" id="uniformPercent" min="0" step="0.1">%
+                `;
+                locationInputs.appendChild(div);
+            }
+        }
+        
+        // Listen for method changes
+        document.querySelectorAll('input[name="incrementMethod"]').forEach(radio => {
+            radio.addEventListener('change', updateIncrementMethodUI);
+        });
+        
+        document.getElementById('nextBtn2').addEventListener('click', () => {
+            const method = document.querySelector('input[name="incrementMethod"]:checked').value;
+            let isValid = true;
+            
+            if (method === 'location') {
+                const locationPercents = {};
+                
+                document.querySelectorAll('.location-percent').forEach(input => {
+                    const location = input.dataset.location;
+                    const percent = parseFloat(input.value);
+                    
+                    if (isNaN(percent)) {
+                        isValid = false;
+                        document.getElementById('locationError').textContent = 'Please enter valid percentages for all locations';
+                        return;
+                    }
+                    
+                    locationPercents[location] = percent;
+                });
+                
+                if (!isValid) return;
+                
+                // Apply location-based increments
+                jsonData.forEach(row => {
+                    const percent = locationPercents[row['Location']];
+                    row['Base Increment'] = (row['Current Salary'] * percent / 100).toFixed(2);
+                });
+            } 
+            else if (method === 'uniform') {
+                const uniformPercent = parseFloat(document.getElementById('uniformPercent').value);
+                
+                if (isNaN(uniformPercent)) {
+                    document.getElementById('locationError').textContent = 'Please enter a valid percentage';
+                    return;
+                }
+                
+                // Apply uniform increment to all
+                jsonData.forEach(row => {
+                    row['Base Increment'] = (row['Current Salary'] * uniformPercent / 100).toFixed(2);
+                });
+            }
+            
+            document.getElementById('locationError').textContent = '';
+            showStep(3);
+            populateRatingInputs();
+        });
+        
+        document.getElementById('prevBtn2').addEventListener('click', () => showStep(1));
+        
+        // Step 3: Rating-based increments
+        function populateRatingInputs() {
+            ratingInputs.innerHTML = '';
+            uniqueRatings.forEach(rating => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label>Rating ${rating}: </label>
+                    <input type="number" class="rating-percent" data-rating="${rating}" min="0" step="0.1">%
+                `;
+                ratingInputs.appendChild(div);
+            });
+        }
+        
+        document.getElementById('nextBtn3').addEventListener('click', () => {
+            const ratingPercents = {};
+            let isValid = true;
+            
+            document.querySelectorAll('.rating-percent').forEach(input => {
+                const rating = input.dataset.rating;
+                const percent = parseFloat(input.value);
+                
+                if (isNaN(percent)) {
+                    isValid = false;
+                    document.getElementById('ratingError').textContent = 'Please enter valid percentages for all ratings';
+                    return;
+                }
+                
+                ratingPercents[rating] = percent;
+            });
+            
+            if (!isValid) return;
+            
+            // Apply rating-based increments
+            jsonData.forEach(row => {
+                if (row['Rating']) {
+                    const percent = ratingPercents[row['Rating']];
+                    row['Rating Based increment'] = (row['Current Salary'] * percent / 100).toFixed(2);
+                }
+            });
+            
+            document.getElementById('ratingError').textContent = '';
+            showStep(4);
+            populateHodInputs();
+        });
+        
+        document.getElementById('prevBtn3').addEventListener('click', () => showStep(2));
+        
+        // Step 4: HOD Adjustments
+        function populateHodInputs() {
+            distributionInputs.innerHTML = '';
+            document.getElementById('totalFund').value = '';
+            
+            // Listen for distribution method changes
+            document.querySelectorAll('input[name="distribution"]').forEach(radio => {
+                radio.addEventListener('change', updateDistributionInputs);
+            });
+        }
+        
+        function updateDistributionInputs() {
+            const method = document.querySelector('input[name="distribution"]:checked').value;
+            distributionInputs.innerHTML = '';
+            
+            if (method === 'even') {
+                // No additional inputs needed for even distribution
+            } else if (method === 'percentage') {
+                jsonData.forEach((row, index) => {
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <label>${row['Employee Name']} (${row['Employee Code']}): </label>
+                        <input type="number" class="employee-percent" data-index="${index}" min="0" max="100" step="0.1">%
+                    `;
+                    distributionInputs.appendChild(div);
+                });
+            } else if (method === 'amount') {
+                jsonData.forEach((row, index) => {
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <label>${row['Employee Name']} (${row['Employee Code']}): </label>
+                        <input type="number" class="employee-amount" data-index="${index}" min="0" step="1">
+                    `;
+                    distributionInputs.appendChild(div);
+                });
+            }
+        }
+        
+        document.getElementById('nextBtn4').addEventListener('click', () => {
+            totalFund = parseFloat(document.getElementById('totalFund').value);
+            
+            if (isNaN(totalFund) || totalFund <= 0) {
+                document.getElementById('hodError').textContent = 'Please enter a valid total fund amount';
+                return;
+            }
+            
+            const method = document.querySelector('input[name="distribution"]:checked').value;
+            let allocations = [];
+            
+            if (method === 'even') {
+                const evenAmount = totalFund / jsonData.length;
+                allocations = jsonData.map(() => evenAmount);
+            } else if (method === 'percentage') {
+                let totalPercent = 0;
+                allocations = Array(jsonData.length).fill(0);
+                
+                document.querySelectorAll('.employee-percent').forEach(input => {
+                    const index = parseInt(input.dataset.index);
+                    const percent = parseFloat(input.value);
+                    
+                    if (!isNaN(percent)) {
+                        allocations[index] = percent;
+                        totalPercent += percent;
+                    }
+                });
+                
+                if (totalPercent > 100) {
+                    document.getElementById('hodError').textContent = 'Total percentage cannot exceed 100%';
+                    return;
+                }
+                
+                allocations = allocations.map(p => (totalFund * p / 100));
+            } else if (method === 'amount') {
+                let totalAmount = 0;
+                allocations = Array(jsonData.length).fill(0);
+                
+                document.querySelectorAll('.employee-amount').forEach(input => {
+                    const index = parseInt(input.dataset.index);
+                    const amount = parseFloat(input.value);
+                    
+                    if (!isNaN(amount)) {
+                        allocations[index] = amount;
+                        totalAmount += amount;
+                    }
+                });
+                
+                if (totalAmount > totalFund) {
+                    document.getElementById('hodError').textContent = `Total allocated amount (${totalAmount}) exceeds department fund (${totalFund})`;
+                    return;
+                }
+            }
+            
+            // Apply HOD adjustments
+            jsonData.forEach((row, index) => {
+                row['HOD Adjustment'] = allocations[index].toFixed(2);
+                row['Total Salary'] = (
+                    parseFloat(row['Current Salary']) + 
+                    parseFloat(row['Base Increment'] || 0) + 
+                    parseFloat(row['Rating Based increment'] || 0) + 
+                    parseFloat(row['HOD Adjustment'] || 0)
+                ).toFixed(2);
+            });
+            
+            document.getElementById('hodError').textContent = '';
+            showStep(5);
+            showPreview();
+        });
+        
+        document.getElementById('prevBtn4').addEventListener('click', () => showStep(3));
+        
+        // Step 5: Review and Download
+        function showPreview() {
+            const table = document.createElement('table');
+            
+            // Create header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            Object.keys(jsonData[0]).forEach(key => {
+                const th = document.createElement('th');
+                th.textContent = key;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // Create body
+            const tbody = document.createElement('tbody');
+            jsonData.forEach(row => {
+                const tr = document.createElement('tr');
+                Object.values(row).forEach(value => {
+                    const td = document.createElement('td');
+                    td.textContent = value;
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            
+            previewTable.innerHTML = '';
+            previewTable.appendChild(table);
+        }
+        
+        document.getElementById('prevBtn5').addEventListener('click', () => showStep(4));
+        
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            // Convert JSON back to worksheet
+            const newWorksheet = XLSX.utils.json_to_sheet(jsonData);
+            
+            // Update the workbook
+            workbook.Sheets[workbook.SheetNames[0]] = newWorksheet;
+            
+            // Generate Excel file
+            const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+            
+            // Download
+            const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'updated_salaries.xlsx';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
