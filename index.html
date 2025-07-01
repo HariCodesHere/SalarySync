@@ -166,16 +166,6 @@
                 padding: 8px;
             }
         }
-
-        /* New styles for remaining fund display */
-        #remainingFund {
-            font-weight: bold;
-            margin-left: 10px;
-        }
-
-        .fund-warning {
-            color: #ff6b6b;
-        }
     </style>
 </head>
 <body>
@@ -223,29 +213,25 @@
         <div id="ratingError" class="error"></div>
     </div>
     
-    <!-- Step 4: HOD Adjustments -->
+    <!-- Step 4: Department Adjustments -->
     <div id="step4" class="step">
-        <h2>Step 4: HOD Adjustments</h2>
+        <h2>Step 4: Department Adjustments</h2>
         <div>
             <label>Total Department Fund: </label>
-            <input type="number" id="totalFund" min="0" oninput="updateRemainingFund()">
-        </div>
-        <div>
-            <label>Remaining Department Fund: </label>
-            <span id="remainingFund">0.00</span>
+            <input type="number" id="totalFund" min="0">
         </div>
         <div>
             <h3>Distribution Method:</h3>
             <div class="radio-option">
-                <input type="radio" name="distribution" id="evenDist" value="even" checked onchange="updateDistributionInputs()">
+                <input type="radio" name="distribution" id="evenDist" value="even" checked>
                 <label for="evenDist">Even Distribution</label>
             </div>
             <div class="radio-option">
-                <input type="radio" name="distribution" id="percentageDist" value="percentage" onchange="updateDistributionInputs()">
+                <input type="radio" name="distribution" id="percentageDist" value="percentage">
                 <label for="percentageDist">Percentage Distribution</label>
             </div>
             <div class="radio-option">
-                <input type="radio" name="distribution" id="amountDist" value="amount" onchange="updateDistributionInputs()">
+                <input type="radio" name="distribution" id="amountDist" value="amount">
                 <label for="amountDist">Direct Amount Entry</label>
             </div>
         </div>
@@ -304,6 +290,15 @@
                     workbook = XLSX.read(data, { type: 'array' });
                     worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    // Verify required columns exist
+                    const requiredColumns = ['Employee Code', 'Employee Name', 'Location', 'Rating', 'Department', 'Current Salary'];
+                    const missingColumns = requiredColumns.filter(col => !jsonData[0]?.hasOwnProperty(col));
+                    
+                    if (missingColumns.length > 0) {
+                        document.getElementById('fileError').textContent = `Missing columns: ${missingColumns.join(', ')}`;
+                        return;
+                    }
                     
                     // Get unique locations and ratings
                     uniqueLocations = [...new Set(jsonData.map(row => row['Location']))];
@@ -412,23 +407,22 @@
         
         document.getElementById('nextBtn3').addEventListener('click', () => {
             const ratingPercents = {};
-            
-            // Add validation to ensure all ratings have values
-            const allRatingsHaveValues = uniqueRatings.every(rating => {
-                const input = document.querySelector(`.rating-percent[data-rating="${rating}"]`);
-                return input && !isNaN(parseFloat(input.value));
-            });
-            
-            if (!allRatingsHaveValues) {
-                document.getElementById('ratingError').textContent = 'Please enter valid percentages for all ratings';
-                return;
-            }
+            let isValid = true;
             
             document.querySelectorAll('.rating-percent').forEach(input => {
                 const rating = input.dataset.rating;
                 const percent = parseFloat(input.value);
+                
+                if (isNaN(percent)) {
+                    isValid = false;
+                    document.getElementById('ratingError').textContent = 'Please enter valid percentages for all ratings';
+                    return;
+                }
+                
                 ratingPercents[rating] = percent;
             });
+            
+            if (!isValid) return;
             
             // Apply rating-based increments
             jsonData.forEach(row => {
@@ -445,12 +439,15 @@
         
         document.getElementById('prevBtn3').addEventListener('click', () => showStep(2));
         
-        // Step 4: HOD Adjustments
+        // Step 4: Department Adjustments
         function populateHodInputs() {
             distributionInputs.innerHTML = '';
             document.getElementById('totalFund').value = '';
-            document.getElementById('remainingFund').textContent = '0.00';
-            updateDistributionInputs();
+            
+            // Listen for distribution method changes
+            document.querySelectorAll('input[name="distribution"]').forEach(radio => {
+                radio.addEventListener('change', updateDistributionInputs);
+            });
         }
         
         function updateDistributionInputs() {
@@ -459,62 +456,24 @@
             
             if (method === 'even') {
                 // No additional inputs needed for even distribution
-                updateRemainingFund();
             } else if (method === 'percentage') {
                 jsonData.forEach((row, index) => {
                     const div = document.createElement('div');
                     div.innerHTML = `
-                        <label>${row['Employee Name']} (${row['Employee Code']}): </label>
-                        <input type="number" class="employee-percent" data-index="${index}" min="0" max="100" step="0.1" oninput="updateRemainingFund()">%
+                        <label>${row['Employee Name']} (${row['Employee Code']} - ${row['Department']}): </label>
+                        <input type="number" class="employee-percent" data-index="${index}" min="0" max="100" step="0.1">%
                     `;
                     distributionInputs.appendChild(div);
                 });
-                updateRemainingFund();
             } else if (method === 'amount') {
                 jsonData.forEach((row, index) => {
                     const div = document.createElement('div');
                     div.innerHTML = `
-                        <label>${row['Employee Name']} (${row['Employee Code']}): </label>
-                        <input type="number" class="employee-amount" data-index="${index}" min="0" step="1" oninput="updateRemainingFund()">
+                        <label>${row['Employee Name']} (${row['Employee Code']} - ${row['Department']}): </label>
+                        <input type="number" class="employee-amount" data-index="${index}" min="0" step="1">
                     `;
                     distributionInputs.appendChild(div);
                 });
-                updateRemainingFund();
-            }
-        }
-        
-        function updateRemainingFund() {
-            totalFund = parseFloat(document.getElementById('totalFund').value) || 0;
-            
-            if (isNaN(totalFund) || totalFund <= 0) {
-                document.getElementById('remainingFund').textContent = '0.00';
-                document.getElementById('remainingFund').className = '';
-                return;
-            }
-            
-            const method = document.querySelector('input[name="distribution"]:checked').value;
-            let allocated = 0;
-            
-            if (method === 'even') {
-                allocated = totalFund; // Even distribution uses all funds
-            } else if (method === 'percentage') {
-                const totalPercent = Array.from(document.querySelectorAll('.employee-percent'))
-                    .reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
-                allocated = (totalFund * totalPercent / 100);
-            } else if (method === 'amount') {
-                allocated = Array.from(document.querySelectorAll('.employee-amount'))
-                    .reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
-            }
-            
-            const remaining = totalFund - allocated;
-            const remainingElement = document.getElementById('remainingFund');
-            remainingElement.textContent = remaining.toFixed(2);
-            
-            // Highlight if remaining is negative
-            if (remaining < 0) {
-                remainingElement.classList.add('fund-warning');
-            } else {
-                remainingElement.classList.remove('fund-warning');
             }
         }
         
@@ -523,12 +482,6 @@
             
             if (isNaN(totalFund) || totalFund <= 0) {
                 document.getElementById('hodError').textContent = 'Please enter a valid total fund amount';
-                return;
-            }
-            
-            const remaining = parseFloat(document.getElementById('remainingFund').textContent);
-            if (remaining < 0) {
-                document.getElementById('hodError').textContent = 'Allocated amount exceeds total fund';
                 return;
             }
             
@@ -573,7 +526,7 @@
                 });
                 
                 if (totalAmount > totalFund) {
-                    document.getElementById('hodError').textContent = `Total allocated amount (${totalAmount.toFixed(2)}) exceeds department fund (${totalFund.toFixed(2)})`;
+                    document.getElementById('hodError').textContent = `Total allocated amount (${totalAmount}) exceeds department fund (${totalFund})`;
                     return;
                 }
             }
