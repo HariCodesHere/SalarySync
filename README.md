@@ -44,7 +44,7 @@ Your Excel file must contain these exact column headers:
 ## Proprietary Notice
 This software and all included documentation are property of HariCodesHere. Unauthorized distribution, modification, or commercial use is prohibited.
 
-For licensing inquiries, contact: [harikrishnansanthsh06@gmail.com]
+For licensing inquiries, contact: [harikrishnansanthosh06@gmail.com]
 
 ## Security
 - No server-side storage
