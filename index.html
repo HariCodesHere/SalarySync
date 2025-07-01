@@ -539,7 +539,7 @@
                     parseFloat(row['Base Increment'] || 0) + 
                     parseFloat(row['Rating Based increment'] || 0) + 
                     parseFloat(row['HOD Adjustment'] || 0)
-                ).toFixed(2);
+                );
             });
             
             document.getElementById('hodError').textContent = '';
