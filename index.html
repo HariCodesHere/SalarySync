@@ -6,10 +6,32 @@
     <title>Salary Increment Calculator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         
 </head>
 <body>
     <h1>Salary Increment Calculator</h1>
+    <!-- Secure Sharing (Supabase) -->
+    <div id="secureSharing" style="background:#1e1e1e;padding:12px;border-radius:8px;margin:12px 0;">
+        <h2>Secure Sharing</h2>
+        <div id="authBox">
+            <input type="text" id="authEmail" placeholder="email" style="max-width:260px;">
+            <input type="password" id="authPassword" placeholder="password" style="max-width:260px;">
+            <button id="btnSignUp">Sign Up</button>
+            <button id="btnSignIn">Sign In</button>
+            <button id="btnSignOut" style="display:none;">Sign Out</button>
+            <div id="authMsg" class="error"></div>
+        </div>
+        <div id="shareArea" style="display:none;margin-top:8px;">
+            <input type="file" id="sharedFile" accept=".xlsx,.xls">
+            <button id="btnUploadShared">Upload to Shared</button>
+            <div id="uploadMsg" class="error"></div>
+            <div id="adminArea" style="display:none;margin-top:8px;">
+                <button id="btnListFiles">Refresh Files</button>
+                <div id="filesList" style="margin-top:6px;"></div>
+            </div>
+        </div>
+    </div>
     
     <!-- Step 1: File Upload -->
     <div id="step1" class="step active">
@@ -442,6 +464,175 @@
             a.click();
             URL.revokeObjectURL(url);
         });
+
+        // ===== Supabase Secure Sharing (config via /api/config) =====
+        (async function initSupabaseSharing() {
+            try {
+                const res = await fetch('/api/config', { cache: 'no-store' });
+                if (!res.ok) throw new Error('Failed to load config');
+                const cfg = await res.json();
+
+                const SUPABASE_URL = cfg.SUPABASE_URL;
+                const SUPABASE_ANON_KEY = cfg.SUPABASE_ANON_KEY;
+                const BUCKET = cfg.BUCKET_NAME || 'salarysync';
+                const SHARED_PREFIX = cfg.SHARED_PREFIX || 'shared';
+                const ADMIN_EMAILS = Array.isArray(cfg.ADMIN_EMAILS) ? cfg.ADMIN_EMAILS : [];
+
+                if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+                    // Surface a gentle notice in the auth box
+                    const msg = document.getElementById('authMsg');
+                    if (msg) msg.textContent = 'Supabase config missing. Set env vars on Vercel.';
+                    return;
+                }
+
+                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+                // Elements
+                const authEmail = document.getElementById('authEmail');
+                const authPassword = document.getElementById('authPassword');
+                const btnSignUp = document.getElementById('btnSignUp');
+                const btnSignIn = document.getElementById('btnSignIn');
+                const btnSignOut = document.getElementById('btnSignOut');
+                const authMsg = document.getElementById('authMsg');
+                const shareArea = document.getElementById('shareArea');
+                const adminArea = document.getElementById('adminArea');
+                const sharedFile = document.getElementById('sharedFile');
+                const btnUploadShared = document.getElementById('btnUploadShared');
+                const uploadMsg = document.getElementById('uploadMsg');
+                const btnListFiles = document.getElementById('btnListFiles');
+                const filesList = document.getElementById('filesList');
+
+                function isAdmin(user) {
+                    if (!user) return false;
+                    const email = user.email || '';
+                    const metaRole = user.user_metadata?.role;
+                    return (ADMIN_EMAILS.includes(email)) || (metaRole === 'admin');
+                }
+
+                function setAuthState(user) {
+                    if (user) {
+                        btnSignOut.style.display = 'inline-block';
+                        btnSignUp.style.display = 'none';
+                        btnSignIn.style.display = 'none';
+                        shareArea.style.display = 'block';
+                        adminArea.style.display = isAdmin(user) ? 'block' : 'none';
+                    } else {
+                        btnSignOut.style.display = 'none';
+                        btnSignUp.style.display = 'inline-block';
+                        btnSignIn.style.display = 'inline-block';
+                        shareArea.style.display = 'none';
+                        adminArea.style.display = 'none';
+                    }
+                }
+
+                // Initial session
+                const { data: { session } } = await supabase.auth.getSession();
+                setAuthState(session?.user || null);
+
+                // Subscribe to auth changes
+                supabase.auth.onAuthStateChange((_event, sess) => {
+                    setAuthState(sess?.user || null);
+                });
+
+                // Auth actions
+                btnSignUp.addEventListener('click', async () => {
+                    authMsg.textContent = '';
+                    const email = authEmail.value.trim();
+                    const password = authPassword.value;
+                    const { error } = await supabase.auth.signUp({ email, password });
+                    authMsg.textContent = error ? error.message : 'Check your inbox to confirm sign up';
+                });
+
+                btnSignIn.addEventListener('click', async () => {
+                    authMsg.textContent = '';
+                    const email = authEmail.value.trim();
+                    const password = authPassword.value;
+                    const { error } = await supabase.auth.signInWithPassword({ email, password });
+                    authMsg.textContent = error ? error.message : 'Signed in';
+                });
+
+                btnSignOut.addEventListener('click', async () => {
+                    authMsg.textContent = '';
+                    await supabase.auth.signOut();
+                });
+
+                // Upload shared file
+                btnUploadShared.addEventListener('click', async () => {
+                    uploadMsg.textContent = '';
+                    const file = sharedFile.files?.[0];
+                    if (!file) {
+                        uploadMsg.textContent = 'Select a file first';
+                        return;
+                    }
+
+                    const safeName = file.name.replace(/[^a-zA-Z0-9_.-]/g, '_');
+                    const objectPath = `${SHARED_PREFIX}/${Date.now()}-${safeName}`;
+
+                    const { error: upErr } = await supabase.storage
+                        .from(BUCKET)
+                        .upload(objectPath, file, {
+                            cacheControl: '3600',
+                            upsert: false,
+                            contentType: file.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        });
+                    if (upErr) {
+                        uploadMsg.textContent = upErr.message;
+                        return;
+                    }
+
+                    const { data: signed, error: signErr } = await supabase.storage
+                        .from(BUCKET)
+                        .createSignedUrl(objectPath, 60 * 60);
+                    if (signErr) {
+                        uploadMsg.textContent = signErr.message;
+                        return;
+                    }
+
+                    uploadMsg.innerHTML = `Uploaded. <a href="${signed.signedUrl}" target="_blank" rel="noopener">Download (1h)</a>`;
+                });
+
+                // Admin: list all shared files
+                async function listFiles() {
+                    filesList.innerHTML = '';
+                    const { data: items, error } = await supabase.storage
+                        .from(BUCKET)
+                        .list(SHARED_PREFIX, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+                    if (error) {
+                        filesList.textContent = error.message;
+                        return;
+                    }
+                    if (!items || items.length === 0) {
+                        filesList.textContent = 'No files yet';
+                        return;
+                    }
+
+                    const ul = document.createElement('ul');
+                    for (const it of items) {
+                        if (!it?.name) continue;
+                        const fullPath = `${SHARED_PREFIX}/${it.name}`;
+                        const { data: s, error: e2 } = await supabase.storage.from(BUCKET).createSignedUrl(fullPath, 60 * 60);
+                        const li = document.createElement('li');
+                        if (!e2 && s?.signedUrl) {
+                            const a = document.createElement('a');
+                            a.href = s.signedUrl;
+                            a.textContent = it.name;
+                            a.target = '_blank';
+                            a.rel = 'noopener';
+                            li.appendChild(a);
+                        } else {
+                            li.textContent = it.name + (e2 ? ` (${e2.message})` : '');
+                        }
+                        ul.appendChild(li);
+                    }
+                    filesList.appendChild(ul);
+                }
+
+                btnListFiles.addEventListener('click', listFiles);
+            } catch (e) {
+                const msg = document.getElementById('authMsg');
+                if (msg) msg.textContent = 'Sharing init error: ' + e.message;
+            }
+        })();
     </script>
-</body>
+  </body>
 </html>
