@@ -26,23 +26,34 @@
             </div>
         </div>
     </header>
+    <div class="toolbar">
+        <div class="container">
+            <ul id="progressSteps" class="progress">
+                <li class="active current">Upload</li>
+                <li>Base Increments</li>
+                <li>Ratings</li>
+                <li>Dept Adjustments</li>
+                <li>Review & Download</li>
+            </ul>
+        </div>
+    </div>
     <!-- Secure Sharing (Supabase) -->
-    <div id="secureSharing" style="background:#1e1e1e;padding:12px;border-radius:8px;margin:12px 0;">
+    <div id="secureSharing" class="card">
         <h2>Secure Sharing</h2>
         <div id="authBox">
             <input type="text" id="authEmail" placeholder="email" style="max-width:260px;">
             <input type="password" id="authPassword" placeholder="password" style="max-width:260px;">
-            <button id="btnSignUp">Sign Up</button>
-            <button id="btnSignIn">Sign In</button>
-            <button id="btnSignOut" style="display:none;">Sign Out</button>
+            <button id="btnSignUp" class="btn">Sign Up</button>
+            <button id="btnSignIn" class="btn btn-primary">Sign In</button>
+            <button id="btnSignOut" class="btn btn-ghost" style="display:none;">Sign Out</button>
             <div id="authMsg" class="error"></div>
         </div>
         <div id="shareArea" style="display:none;margin-top:8px;">
             <input type="file" id="sharedFile" accept=".xlsx,.xls">
-            <button id="btnUploadShared">Upload to Shared</button>
+            <button id="btnUploadShared" class="btn btn-primary">Upload to Shared</button>
             <div id="uploadMsg" class="error"></div>
             <div id="adminArea" style="display:none;margin-top:8px;">
-                <button id="btnListFiles">Refresh Files</button>
+                <button id="btnListFiles" class="btn">Refresh Files</button>
                 <div id="filesList" style="margin-top:6px;"></div>
             </div>
         </div>
@@ -52,7 +63,7 @@
     <div id="step1" class="step active">
         <h2>Step 1: Upload Excel File</h2>
         <input type="file" id="fileInput" accept=".xlsx,.xls">
-        <button id="uploadBtn">Upload</button>
+        <button id="uploadBtn" class="btn btn-primary">Upload</button>
         <div id="fileError" class="error"></div>
     </div>
     
@@ -76,8 +87,10 @@
             <!-- Will be populated based on selected method -->
         </div>
         
-        <button id="prevBtn2">Previous</button>
-        <button id="nextBtn2">Continue</button>
+        <div class="btn-row">
+            <button id="prevBtn2" class="btn btn-secondary">Previous</button>
+            <button id="nextBtn2" class="btn btn-primary">Continue</button>
+        </div>
         <div id="locationError" class="error"></div>
     </div>
     
@@ -85,8 +98,10 @@
     <div id="step3" class="step">
         <h2>Step 3: Set Rating-based Increments</h2>
         <div id="ratingInputs"></div>
-        <button id="prevBtn3">Previous</button>
-        <button id="nextBtn3">Continue</button>
+        <div class="btn-row">
+            <button id="prevBtn3" class="btn btn-secondary">Previous</button>
+            <button id="nextBtn3" class="btn btn-primary">Continue</button>
+        </div>
         <div id="ratingError" class="error"></div>
     </div>
     
@@ -114,17 +129,21 @@
         </div>
         
         <div id="distributionInputs"></div>
-        <button id="prevBtn4">Previous</button>
-        <button id="nextBtn4">Continue</button>
+        <div class="btn-row">
+            <button id="prevBtn4" class="btn btn-secondary">Previous</button>
+            <button id="nextBtn4" class="btn btn-primary">Continue</button>
+        </div>
         <div id="hodError" class="error"></div>
     </div>
     
     <!-- Step 5: Review and Download -->
     <div id="step5" class="step">
         <h2>Step 5: Review and Download</h2>
-        <div id="previewTable"></div>
-        <button id="prevBtn5">Previous</button>
-        <button id="downloadBtn">Download Updated File</button>
+        <div id="previewTable" class="table-wrap"></div>
+        <div class="btn-row">
+            <button id="prevBtn5" class="btn btn-secondary">Previous</button>
+            <button id="downloadBtn" class="btn btn-primary">Download Updated File</button>
+        </div>
     </div>
 
     <script>
@@ -150,6 +169,12 @@
             steps.forEach((step, index) => {
                 step.classList.toggle('active', index === stepNumber - 1);
             });
+            const items = document.querySelectorAll('#progressSteps li');
+            items.forEach((li, i) => {
+                li.classList.toggle('current', i === stepNumber - 1);
+                li.classList.toggle('active', i <= stepNumber - 1);
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
         // Step 1: File Upload
