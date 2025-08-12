@@ -296,6 +296,72 @@
             border: 1px solid #2a2a2a;
         }
         .btn-ghost:hover { background: #1f1f1f; }
+        
+        /* --- Tabs vs Steps differentiation --- */
+        /* Top tab bar specific tweaks */
+        #tabBar.progress li {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+        }
+        #tabBar.progress li.active {
+            background: #222;
+            color: #fff;
+            border-color: #555;
+            box-shadow: none;
+        }
+        
+        /* Step progress bar: numbered stepper with connectors */
+        #progressToolbar { background: transparent; border: 0; }
+        #progressToolbar .progress {
+            counter-reset: step;
+            gap: 24px;
+            padding: 16px 0;
+        }
+        #progressToolbar .progress li {
+            background: transparent;
+            border: 0;
+            color: #9aa1a9;
+            padding: 0 0 0 0;
+        }
+        #progressToolbar .progress li::before {
+            counter-increment: step;
+            content: counter(step);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            margin-right: 8px;
+            border-radius: 50%;
+            background: #171717;
+            border: 1px solid #3a3a3a;
+            color: #c7c7c7;
+            font-weight: 700;
+        }
+        #progressToolbar .progress li.current::before {
+            background: #3b82f6;
+            border-color: #2563eb;
+            color: #fff;
+        }
+        #progressToolbar .progress li.active::before {
+            border-color: #3b82f6;
+            color: #e5efff;
+        }
+        #progressToolbar .progress li { position: relative; }
+        #progressToolbar .progress li + li::after {
+            content: '';
+            position: absolute;
+            left: -16px;
+            top: 50%;
+            width: 16px;
+            height: 2px;
+            background: #2a2a2a;
+            transform: translateY(-50%);
+        }
+        #progressToolbar .progress li.current + li::after,
+        #progressToolbar .progress li.active + li::after {
+            background: #3b82f6;
+        }
 
         /* --- Table Wrapper --- */
         .table-wrap {
