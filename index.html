@@ -26,7 +26,16 @@
             </div>
         </div>
     </header>
+    <!-- App Tabs -->
     <div class="toolbar">
+        <div class="container">
+            <ul id="tabBar" class="progress">
+                <li class="active" data-tab="calc">Calculator</li>
+                <li data-tab="share">Secure Sharing</li>
+            </ul>
+        </div>
+    </div>
+    <div id="progressToolbar" class="toolbar">
         <div class="container">
             <ul id="progressSteps" class="progress">
                 <li class="active current">Upload</li>
@@ -38,7 +47,7 @@
         </div>
     </div>
     <!-- Secure Sharing (Supabase) -->
-    <div id="secureSharing" class="card">
+    <div id="secureSharing" class="card" style="display:none;">
         <h2>Secure Sharing</h2>
         <div id="authBox">
             <input type="text" id="authEmail" placeholder="email" style="max-width:260px;">
@@ -49,7 +58,11 @@
             <div id="authMsg" class="error"></div>
         </div>
         <div id="shareArea" style="display:none;margin-top:8px;">
-            <input type="file" id="sharedFile" accept=".xlsx,.xls">
+            <div class="file-upload">
+                <label for="sharedFile" class="btn btn-secondary">Choose file</label>
+                <span id="sharedFileName" class="file-name">No file chosen</span>
+                <input type="file" id="sharedFile" accept=".xlsx,.xls" class="file-input">
+            </div>
             <button id="btnUploadShared" class="btn btn-primary">Upload to Shared</button>
             <div id="uploadMsg" class="error"></div>
             <div id="adminArea" style="display:none;margin-top:8px;">
@@ -62,7 +75,11 @@
     <!-- Step 1: File Upload -->
     <div id="step1" class="step active">
         <h2>Step 1: Upload Excel File</h2>
-        <input type="file" id="fileInput" accept=".xlsx,.xls">
+        <div class="file-upload">
+            <label for="fileInput" class="btn btn-secondary">Choose file</label>
+            <span id="fileInputName" class="file-name">No file chosen</span>
+            <input type="file" id="fileInput" accept=".xlsx,.xls" class="file-input">
+        </div>
         <button id="uploadBtn" class="btn btn-primary">Upload</button>
         <div id="fileError" class="error"></div>
     </div>
@@ -163,6 +180,14 @@
         const ratingInputs = document.getElementById('ratingInputs');
         const distributionInputs = document.getElementById('distributionInputs');
         const previewTable = document.getElementById('previewTable');
+        // File name displays
+        const fileInputName = document.getElementById('fileInputName');
+        const sharedFile = document.getElementById('sharedFile');
+        const sharedFileName = document.getElementById('sharedFileName');
+        // Tabs
+        const tabBar = document.getElementById('tabBar');
+        const progressToolbar = document.getElementById('progressToolbar');
+        const secureSharing = document.getElementById('secureSharing');
         
         // Navigation functions
         function showStep(stepNumber) {
@@ -175,6 +200,39 @@
                 li.classList.toggle('active', i <= stepNumber - 1);
             });
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Update custom file input labels on change
+        fileInput.addEventListener('change', () => {
+            fileInputName.textContent = fileInput.files && fileInput.files[0] ? fileInput.files[0].name : 'No file chosen';
+        });
+        if (sharedFile) {
+            sharedFile.addEventListener('change', () => {
+                sharedFileName.textContent = sharedFile.files && sharedFile.files[0] ? sharedFile.files[0].name : 'No file chosen';
+            });
+        }
+
+        // Tab switching
+        if (tabBar) {
+            tabBar.addEventListener('click', (e) => {
+                const li = e.target.closest('li');
+                if (!li) return;
+                const tab = li.getAttribute('data-tab');
+                // Toggle active class on tabs
+                [...tabBar.querySelectorAll('li')].forEach(x => x.classList.toggle('active', x === li));
+                if (tab === 'share') {
+                    // Show secure sharing, hide calculator UI
+                    secureSharing.style.display = '';
+                    progressToolbar.style.display = 'none';
+                    steps.forEach(step => step.classList.remove('active'));
+                } else {
+                    // Show calculator UI, hide secure sharing
+                    secureSharing.style.display = 'none';
+                    progressToolbar.style.display = '';
+                    showStep(1);
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
         }
         
         // Step 1: File Upload

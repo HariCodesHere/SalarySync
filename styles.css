@@ -311,3 +311,26 @@
             border-radius: 8px;
             border: 1px solid #2a2a2a;
         }
+
+        /* --- Custom File Upload --- */
+        .file-upload {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 8px 0 12px;
+        }
+        .file-input {
+            display: none;
+        }
+        .file-name {
+            color: #a8a8a8;
+            background: #151515;
+            border: 1px dashed #2a2a2a;
+            padding: 8px 12px;
+            border-radius: 6px;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
