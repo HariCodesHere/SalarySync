@@ -20,8 +20,8 @@
                 </div>
             </div>
             <div class="header-actions">
-                <a class="btn btn-primary" href="header.xlsx" download>
-                    Download header.xlsx
+                <a id="downloadHeaderBtn" class="btn btn-primary" href="header.xlsx" download style="display: none;">
+                     Download header.xlsx
                 </a>
             </div>
         </div>
@@ -32,6 +32,7 @@
             <ul id="tabBar" class="progress">
                 <li class="active" data-tab="calc">Calculator</li>
                 <li data-tab="share">Secure Sharing</li>
+                <li data-tab="help">How to Use</li>
             </ul>
         </div>
     </div>
@@ -188,6 +189,10 @@
         const tabBar = document.getElementById('tabBar');
         const progressToolbar = document.getElementById('progressToolbar');
         const secureSharing = document.getElementById('secureSharing');
+        const howToUse = document.getElementById('howToUse');
+        const downloadHeaderBtn = document.getElementById('downloadHeaderBtn');
+        // Default to Calculator tab visible: show header download button initially
+        if (downloadHeaderBtn) downloadHeaderBtn.style.display = '';
         
         // Navigation functions
         function showStep(stepNumber) {
@@ -224,12 +229,23 @@
                     // Show secure sharing, hide calculator UI
                     secureSharing.style.display = '';
                     progressToolbar.style.display = 'none';
+                    if (howToUse) howToUse.style.display = 'none';
                     steps.forEach(step => step.classList.remove('active'));
+                    if (downloadHeaderBtn) downloadHeaderBtn.style.display = 'none';
+                } else if (tab === 'help') {
+                    // Show help, hide others
+                    if (howToUse) howToUse.style.display = '';
+                    secureSharing.style.display = 'none';
+                    progressToolbar.style.display = 'none';
+                    steps.forEach(step => step.classList.remove('active'));
+                    if (downloadHeaderBtn) downloadHeaderBtn.style.display = 'none';
                 } else {
                     // Show calculator UI, hide secure sharing
                     secureSharing.style.display = 'none';
+                    if (howToUse) howToUse.style.display = 'none';
                     progressToolbar.style.display = '';
                     showStep(1);
+                    if (downloadHeaderBtn) downloadHeaderBtn.style.display = '';
                 }
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
