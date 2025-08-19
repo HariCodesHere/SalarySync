@@ -1,4 +1,5 @@
 /* Dark Mode Base Styles */
+/* Prototype.     */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #121212;
@@ -8,6 +9,8 @@
             padding: 20px;
             line-height: 1.6;
         }
+
+
 
         h1, h2, h3 {
             color: #ffffff;
@@ -72,6 +75,8 @@
             box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
         }
 
+
+
         input[type="radio"] {
             margin-right: 8px;
         }
@@ -82,7 +87,7 @@
             color: #cccccc;
         }
 
-        /* Buttons */
+     /* Buttons (Rev up)*/
         button {
             background-color: #3a3a3a;
             color: #ffffff;
@@ -119,7 +124,9 @@
             border-radius: 8px;
             margin-bottom: 20px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            display: none; /* Hidden by default */
+
+
+            display: none; /* Hidden by default (Step by step revealed Alternatively)*/
         }
 
         .step.active {
@@ -157,7 +164,7 @@
             }
             
             th, td {
-                padding: 8px;
+                padding: 9px;
             }
         }
            /* --- App Header --- */

@@ -139,5 +139,3 @@ This software and documentation are proprietary. Unauthorized distribution, modi
 - **Calculations**: Precision to 2 decimal places
 - **Export Format**: Excel 2013+ compatible XLSX files
 
----
-
